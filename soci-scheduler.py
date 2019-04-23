@@ -1,9 +1,25 @@
+#add pass info (polar diagram with arc)
+#save image during pass
+#https://www.4dsystems.com.au/product/uCAM_III/
+#https://stackoverflow.com/questions/26906510/rotate-theta-0-on-matplotlib-polar-plot
+#https://manpages.ubuntu.com/manpages/xenial/man8/rotctld.8.html
+#https://www.decalage.info/en/python/html
+# $ pip install pdfkit
+
 import predict
 import subprocess
 import time
+import scipy
+#import pdfkit 
 import numpy as np
 import urllib.request
 from io import BytesIO
+import matplotlib.pyplot as plt
+from pylab import imread, imshow, gray, mean
+
+
+
+import scipy.misc
 
 nextObs = 0
 name = 'QB50P2' #test satellite
@@ -46,3 +62,13 @@ def pullTLE(name):
 if __name__ == '__main__':
     import sys
     sys.exit(main(sys.argv))
+    
+image = imread('no_image.png')
+plt.imshow(image)
+scipy.misc.imsave('outfile.bmp', image)
+#pdfkit.from_file('test.html', 'out.pdf') 
+#add transmission properties (SNR, doppler)
+#add spectogram
+#create sample
+
+
