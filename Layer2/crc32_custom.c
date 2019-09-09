@@ -7,10 +7,10 @@
 #include <stdlib.h>
 #include <time.h>
  
-uint_fast32_t crc32_custom(uint_fast32_t crc, const char *buf, size_t len)
+uint_fast32_t crc32_custom(uint_fast32_t crc, const uint_fast8_t *buf, const size_t len)
 {
 	uint_fast8_t octet;
-	const char *p, *q;
+	const uint8_t *p, *q;
 
 	static uint_fast32_t table[256] = 
 	{
@@ -91,7 +91,7 @@ uint_fast32_t crc32_custom(uint_fast32_t crc, const char *buf, size_t len)
 int main()
 {
 	const int packet_length = 245; 
-	char s[packet_length];
+	uint_fast8_t s[packet_length];
 	
 	//Generate
 	uint_fast32_t crc_digest;
@@ -105,7 +105,7 @@ int main()
 	
 	double time_spent = 0.0;
 	clock_t begin = clock();
-	crc_digest = crc32_custom(0, s, strlen(s));
+	crc_digest = crc32_custom(0, s, packet_length);
 	clock_t end = clock();
 	
 	//CRC-32

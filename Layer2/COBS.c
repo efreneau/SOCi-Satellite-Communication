@@ -8,15 +8,15 @@
 #define StartBlock()	(code_ptr = dst++, code = 1)
 #define FinishBlock()	(*code_ptr = code)
 
-size_t StuffData(uint8_t *ptr, size_t length, uint8_t *dst)
+size_t StuffData(uint_fast8_t *ptr, const size_t length, uint_fast8_t *dst)
 {
-	const uint8_t *start = dst, *end = ptr + length;
-	uint8_t code, *code_ptr; // Where to insert the leading count
+	const uint_fast8_t *start = dst, *end = ptr + length;
+	uint_fast8_t code, *code_ptr; // Where to insert the leading count
 	StartBlock();
 	
 	while (ptr < end) {//loop over data
 		if (code != 0xFF) {
-			uint8_t c = *ptr++;
+			uint_fast8_t c = *ptr++;
 			if (c != 0) {
 				*dst++ = c;
 				code++;
@@ -54,7 +54,7 @@ int main()
 	const int frame_length = 254; 
 	char s[frame_length];
 	uint_fast8_t s_byte[frame_length];
-	uint_fast8_t out[frame_length+1];
+	uint_fast8_t out[frame_length+2];
 	uint_fast8_t test[frame_length];
 	
 	//Generate
@@ -63,8 +63,8 @@ int main()
 	srand(time(NULL));
 	for (i=0;i<frame_length;i++){
 		//s[i]=(rand()%26)+65;//letter space
-		//s[i]=rand() % 256;//arbitrary
-		s[i] = 0;//reserved byte mine field
+		s[i]=rand() % 256;//arbitrary
+		//s[i] = 0;//reserved byte mine field
 	}
 	//s[0] = 0xff;//testing altered first bit
 	
@@ -78,7 +78,7 @@ int main()
 	//COBS
 	double time_spent = 0.0;
 	clock_t begin = clock();
-	size_t length = StuffData(s_byte, (size_t) frame_length, out);
+	size_t length = StuffData(s_byte, frame_length, out);
 	clock_t end = clock();
 	
 	time_spent = (double)(end - begin)*1000000 / CLOCKS_PER_SEC;
@@ -86,13 +86,28 @@ int main()
 	printf("Time elpased is %d microseconds.\n", (int)time_spent);
 	printf("Total Size: %lu Bytes (+%lu).",length,length-frame_length);
 	printf("\n=================================\n");
+	printf("Data before substitution\n");
+	printf("=================================\n");
 	
-	size_t length2 = UnStuffData(out, (size_t) frame_length+1, test);
-	
-	for (int i = 0; i <= 255; i++){
-		//printf("0x%02x|", s_byte[i]);//data
-		//printf("0x%02x|", out[i]);//stuffed
-		//printf("0x%02x ", test[i]);//stuffed then unstuffed
+	size_t length2 = UnStuffData(out, frame_length+1, test);
+	for (int i = 0; i < frame_length; i++){
+		printf("0x%02x|", s_byte[i]);
+		if (i % 8 == 7)
+			printf("\n");
+	}
+	//printf("%x",length);
+	printf("\n=================================\n");
+	printf("Data after substitution\n");
+	printf("=================================\n");
+	for (int i = 0; i < length; i++){
+		printf("0x%02x|", out[i]);
+		if (i % 8 == 7)
+			printf("\n");
+	}
+	printf("\n=================================\n");
+	printf("Equality check: Data == Inverse_Cobs(Cobs(Data))\n");
+	printf("=================================\n");
+	for (int i = 0; i < length2; i++){
 		printf("%s ", (s_byte[i] == test[i]) ? "true" : "false");//stuffed then unstuffed check
 		if (i % 8 == 7)
 			printf("\n");

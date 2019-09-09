@@ -4,6 +4,7 @@
 #include <time.h>
 #include <math.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 
 uint_fast32_t crc32_custom(uint_fast32_t crc, const char *buf, size_t len)
@@ -90,10 +91,10 @@ uint_fast32_t crc32_custom(uint_fast32_t crc, const char *buf, size_t len)
 #define StartBlock()	(code_ptr = dst++, code = 1)
 #define FinishBlock()	(*code_ptr = code)
 
-size_t StuffData(uint8_t *ptr, size_t length, uint8_t *dst)
+size_t StuffData(uint_fast8_t *ptr, size_t length, uint_fast8_t *dst)
 {
 	const uint8_t *start = dst, *end = ptr + length;
-	uint8_t code, *code_ptr; // Where to insert the leading count
+	uint_fast8_t code, *code_ptr; // Where to insert the leading count
 	StartBlock();
 	
 	while (ptr < end) {//loop over data
@@ -112,6 +113,25 @@ size_t StuffData(uint8_t *ptr, size_t length, uint8_t *dst)
 	return dst - start;
 }
 
+size_t UnStuffData(uint_fast8_t *ptr, size_t length, uint_fast8_t *dst)
+{
+	const uint_fast8_t *start = dst, *end = ptr + length;
+	uint_fast8_t code = 0xFF, copy = 0;
+
+	for (; ptr < end; copy--) {
+		if (copy != 0) {
+			*dst++ = *ptr++;
+		} else {
+			if (code != 0xFF)
+				*dst++ = 0;
+			copy = code = *ptr++;
+			if (code == 0)
+				break;
+		}
+	}
+	return dst - start;
+}
+
 int main()
 {
 	const int packet_length = 250; //size with header, size without is 245
@@ -120,6 +140,10 @@ int main()
 	uint_fast32_t crc_digest;
 	int i;
 	srand(time(0));
+	
+	printf("=================================\n");
+	printf("Create and Frame Packet\n");
+	printf("=================================\n");
 	
 	//Generate
 	for (i=0;i<packet_length;i++){
@@ -131,7 +155,8 @@ int main()
 	
 	double time_spent = 0.0;
 	clock_t begin = clock();
-	crc_digest = crc32_custom(0, s, strlen(s));
+	crc_digest = crc32_custom(0, s, 250);
+	//printf("\n%x/n",strlen(s));
 	clock_t end = clock();
 	
 	//CRC-32
@@ -140,11 +165,11 @@ int main()
 	
 	time_spent = (double)(end - begin)*1000000 / CLOCKS_PER_SEC;
 
-	printf("Time for step: %d microseconds.\n", (int)time_spent);
-	printf("New Size: 254 Bytes (+4).");
+	printf("Time for step is %d microseconds.\n", (int)time_spent);
+	printf("New Size: 254 Bytes (+4).\n");
 	
 	//COBS
-	printf("\n=================================\n");
+	printf("=================================\n");
 	printf("COBS Substitution of 0x0\n");
 	
 	uint_fast8_t s_byte[254];
@@ -161,14 +186,65 @@ int main()
 	s_byte[253] = crc_digest & 0xFF;
 	
 	begin = clock();
-	size_t length = StuffData(s_byte, 254, out);
+	StuffData(s_byte, 254, out);
 	end = clock();
 	
 	time_spent = (double)(end - begin)*1000000 / CLOCKS_PER_SEC;
 
-	printf("Time elpased is %d microseconds.\n", (int)time_spent);
-	printf("Total Size: 256 Bytes (+2).");
+	printf("Time for step is %d microseconds.\n", (int)time_spent);
+	printf("Total Size: 256 Bytes (+2).\n");
+	
 	printf("\n=================================\n");
+	printf("Deframe and Check Packet\n");
+	printf("=================================\n");
+	printf("Undo COBS Substitution of 0x0\n");
+	
+	uint_fast8_t s_byte_hat[254];
+	
+	begin = clock();
+	UnStuffData(out, 255, s_byte_hat);
+	end = clock();
+	
+	time_spent = (double)(end - begin)*1000000 / CLOCKS_PER_SEC;
+	
+	uint_fast32_t crc_rx;
+	uint_fast32_t crc_digest_hat;
+	uint_fast8_t payload[250];
+
+	for(i = 0;i < 250; i++)
+		payload[i] = s_byte_hat[i];
+	
+	begin = clock();
+	crc_rx = (s_byte_hat[250] << 24) + (s_byte_hat[251] << 16) + (s_byte_hat[252] << 8) + s_byte_hat[253];
+	crc_digest_hat = crc32_custom(0, payload, 250);
+	end = clock();
+	
+	printf("Time for step is %d microseconds.\n", (int)time_spent);
+	printf("RX CRC: 0x%x\n", crc_rx);
+	printf("=================================\n");
+	printf("Check CRC of RX frame\n");
+	printf("Computed CRC: 0x%x\n",crc_digest_hat);
+	printf("Matches?: %s\n", (int) crc_rx == (int) crc_digest_hat ? "True":"False");
+	time_spent = (double)(end - begin)*1000000 / CLOCKS_PER_SEC;
+	printf("Time for step is %d microseconds.\n", (int)time_spent);
+	printf("=================================\n");
+	printf("Payload + Header (250 Bytes).\n");
+	
+	/*
+	printf("DEBUG PAYLOAD\n");
+	for (int i = 0; i < 250; i++){
+		printf("0x%02x|", (uint_fast8_t) s[i]);
+		if (i % 8 == 7)
+			printf("\n");
+	}
+		printf("=================================\n");
+
+	for (int i = 0; i < 250; i++){
+		printf("0x%02x|", payload[i]);
+		if (i % 8 == 7)
+			printf("\n");
+	}
+	*/
 	
 	return 0;
 }
