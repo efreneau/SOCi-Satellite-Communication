@@ -1,4 +1,3 @@
-
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -6,6 +5,8 @@
 
 #include <stdlib.h>
 #include <time.h>
+
+#include "crc32_custom.h"
  
 uint_fast32_t crc32_custom(uint_fast32_t crc, const uint_fast8_t *buf, const size_t len)
 {
@@ -87,7 +88,7 @@ uint_fast32_t crc32_custom(uint_fast32_t crc, const uint_fast8_t *buf, const siz
 	}
 	return ~crc;//final crc
 }
- 
+/*
 int main()
 {
 	const int packet_length = 245; 
@@ -119,4 +120,4 @@ int main()
 	printf("\n=================================\n");
 	return 0;
 }
-
+*/

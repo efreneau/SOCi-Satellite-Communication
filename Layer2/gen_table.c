@@ -8,7 +8,7 @@
 //Another option can detect 32 bit burst errors and all 7-bit error patterns in sequences up to 124 B;
 //Uses polynomial of 0xf8c9140a with results reflected.
 
-//Check the Koopman website to find the most up to date ideal polynomial. Both of these are liable to change
+//Check the Koopman website to find the most up to date ideal polynomial. Both of these are liable to change.
 
 #include <stdio.h>
 #include <stdint.h>
